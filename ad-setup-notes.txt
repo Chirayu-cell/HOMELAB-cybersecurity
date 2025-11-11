@@ -1,0 +1,67 @@
+# AD Setup Notes — Windows Server 2019 (step-by-step)
+# Target: deploy a single-domain lab (security.lab)
+# Server names & IPs (example):
+# DC01: 10.0.3.2 (Windows Server 2019 Standard)
+# Win10-User1: 10.0.3.101 (Windows 10 Enterprise)
+# Splunk: 10.0.2.100
+
+PREP: set static IPs on Windows Server (10.0.3.2), set preferred DNS to itself during promotion.
+
+1) Install Active Directory Domain Services (AD DS)
+   - Server Manager -> Add roles and features -> Role-based -> Select "Active Directory Domain Services"
+   - Add required features, continue, install
+   - After install, click "Promote this server to a domain controller"
+
+2) Promote to Domain Controller (new forest)
+   - Deployment Configuration -> Add a new forest: Root domain name: security.lab
+   - Set DSRM password (store securely)
+   - Set NetBIOS name (e.g., SECURITY)
+   - DNS options: allow automatic
+   - Paths: default
+   - Review & Install -> Reboot when finished
+
+3) Verify DNS and AD health
+   - Run `dcdiag` and `nslookup security.lab`
+   - Confirm SRV records exist under DNS Manager -> Forward Lookup Zones
+
+4) Create organizational structure
+   - Active Directory Users and Computers -> Create OU: "Workstations", "Servers", "Users"
+   - Create service account `svc-splunk` (if Splunk uses a domain account to query logs)
+   - Create domain user `lab\chira` for testing
+
+5) Join Windows 10 client to domain
+   - On Win10: System -> Change settings -> Domain: security.lab
+   - Reboot, login as domain\chira
+
+6) Configure Group Policy for Sysmon & Logging
+   - Create a GPO: "Sysmon Deployment"
+   - Under Computer Configuration -> Policies -> Windows Settings -> Scripts, or use Group Policy Preferences to drop Sysmon installer and config
+   - Example Sysmon config: enable Process Create (Event ID 1), Network Connection (3), FileCreateTime (file create/modify)
+   - Use `PsExec` or GPO startup script to run: `Sysmon64.exe -i sysmon-config.xml`
+   - Ensure Event IDs are forwarded to Splunk via Universal Forwarder or Winlogbeat
+
+7) Windows Firewall & WinRM (if needed)
+   - Open firewall rules for Splunk UF (if Splunk pulls via WinRM/WinEventChannel)
+   - Configure WinRM (if you plan remote collection): `winrm quickconfig`
+
+8) DNS / Reverse lookup
+   - Ensure reverse lookup zone exists for 10.0.3.x so logs show FQDN when possible
+
+9) Optional: Create service accounts and least-privilege groups
+   - `svc-admin` (for lab automation)
+   - Put AD admin accounts in separate OU, enable MFA on any internet-exposed systems (not necessary for isolated lab)
+
+10) Backup & snapshots
+   - Take VM snapshot after successful DC promotion (very important in labs)
+
+AD Hardening Notes (lab-appropriate)
+ - Do NOT link lab DC to any corporate environment.
+ - Use strong DSRM password, but keep it in a safe password manager.
+ - Rollback to snapshots before destructive tests to avoid orphaned domain controllers.
+
+Troubleshooting Tips:
+ - If client fails to join: check DNS settings to point to DC IP (10.0.3.2).
+ - Use `ipconfig /registerdns` and `gpupdate /force` when needed.
+ - Use Event Viewer -> System/Application/Security for failure reasons.
+
+-- END --
