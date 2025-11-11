@@ -51,5 +51,5 @@ Blue Team analysis workflows for detection and defense
 🧑‍💻 Author
 
 Chirayu Paliwal
-Cybersecurity Blue Team & SOC Automation Enthusiast
-🔗 LinkedIn: www.linkedin.com/in/chirayu-paliwal-a726a925a
+| Cybersecurity Blue Team & SOC Automation Enthusiast
+| 🔗 LinkedIn: www.linkedin.com/in/chirayu-paliwal-a726a925a
