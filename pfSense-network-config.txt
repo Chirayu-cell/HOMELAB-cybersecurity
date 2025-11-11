@@ -1,0 +1,73 @@
+# pfSense Network Configuration (human-readable template)
+# Replace <REPLACE_ME> entries with your real values before applying.
+
+# System / Host
+Hostname: pfsense
+Domain: security.lab
+Admin user: admin
+Admin password: <REPLACE_ME_ADMIN_PASSWORD>
+
+# Interface assignments
+# Note: map these to your VirtualBox/VMware vNIC order
+WAN  -> vtnet0  -> DHCP from upstream (10.0.2.15/24) OR static public
+LAN  -> vtnet1  -> 10.0.1.1/24        (Purpose: general lab clients)
+MON  -> vtnet2  -> 10.0.2.1/24        (Purpose: monitoring / Splunk ingestion)
+AD   -> vtnet3  -> 10.0.3.1/24        (Purpose: AD domain controllers & Windows clients)
+VULN -> vtnet4  -> 10.0.4.1/24        (Purpose: vulnerable targets like Metasploitable)
+
+# DHCP Server (enable per LAN)
+LAN (10.0.1.0/24)
+  Range: 10.0.1.100 - 10.0.1.200
+  Gateway: 10.0.1.1
+  DNS: 10.0.3.2 (Windows Server DNS)
+
+AD (10.0.3.0/24)
+  Static assignment recommended for domain controllers and servers.
+  Example host IPs:
+    DC01 (Windows Server 2019): 10.0.3.2 (static)
+    Win10 Client: 10.0.3.101
+
+Monitoring (10.0.2.0/24)
+  Splunk Server (Ubuntu): 10.0.2.100 (static)
+
+Vulnerable (10.0.4.0/24)
+  Metasploitable: 10.0.4.100 (static)
+  No DHCP or restricted DHCP range (optional)
+
+# Basic Firewall Rules (apply to Interfaces -> Rules)
+# 1) LAN interface (10.0.1.0/24)
+ - Allow: LAN net -> any (temporary for lab) WITH logging enabled
+ - Later restrict to only required ports for hardened lab
+
+# 2) AD interface (10.0.3.0/24)
+ - Allow: AD net -> AD net (intra-DC comms)
+ - Allow: AD net -> Monitoring (port 514 UDP for syslog, 9997/8089 for Splunk, WinRM/WinRM-HTTPS if needed)
+ - Block: AD net -> VULN by default (use explicit rules to allow testing)
+
+# 3) Monitoring (10.0.2.0/24)
+ - Allow: Monitoring -> AD (to pull logs/collect)
+ - Allow: Monitoring -> WAN (updates)
+ - Allow: LAN/AD/VULN -> Monitoring (only the flows you want to ingest)
+
+# 4) VULN (10.0.4.0/24)
+ - Deny by default to other zones, allow inbound from Kali for testing
+ - Example: Allow: 10.0.1.2 (Kali) -> 10.0.4.100 (Metasploitable) any (for pentesting)
+
+# NAT (Outbound)
+# If pfSense is acting as gateway to internet (NAT)
+ - Automatic outbound NAT enabled (default)
+ - For internet tests, map WAN out via upstream address
+
+# Port forwards (example for remote admin tunnels only)
+# Avoid exposing lab to public internet. If required use secure VPN:
+ - OpenVPN server on pfSense (recommended over port forwards)
+ - If using port forward: WAN:1194 -> pfSense:1194 (OpenVPN)
+
+# Logging & Monitoring
+ - Enable remote Syslog: send firewall logs to Splunk server (10.0.2.100:514/UDP)
+ - Enable Suricata or Snort inline on monitoring interface (if installed), log to EVE or Barnyard2 forwarded to Splunk
+
+# Misc recommendations
+ - Snapshot vm before major config changes
+ - Use Console/webConfigurator over HTTPS (let pfSense generate cert or import lab CA cert)
+ - Lock down pfSense admin access to a management IP range only (e.g., 10.0.3.2 or your host)
