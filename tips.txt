@@ -1,0 +1,11 @@
+Quick next steps I recommend (so these templates become usable)
+
+1. Replace <REPLACE_ME> placeholders (passwords, hostnames).
+
+2. Create the indexes in Splunk (windows, sysmon, network) or change index= values to your existing ones.
+
+3. On pfSense GUI, implement the interfaces and firewall rule templates. Use the notes to create OpenVPN rather than exposing ports publicly.
+
+4. For Sysmon, create a sysmon-config.xml (I can generate one for you next — say if you want the full Sysmon XML with rules for detection).
+
+5. Snapshot VMs before experimenting.
