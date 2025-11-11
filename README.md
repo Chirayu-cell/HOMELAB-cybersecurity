@@ -47,3 +47,9 @@ Blue Team analysis workflows for detection and defense
 4️⃣ Opportunity to experiment, break, and fix — without risk.
 5️⃣ Builds confidence for professional SOC and pentesting roles.
 
+
+🧑‍💻 Author
+
+Chirayu Paliwal
+Cybersecurity Blue Team & SOC Automation Enthusiast
+🔗 LinkedIn: www.linkedin.com/in/chirayu-paliwal-a726a925a
